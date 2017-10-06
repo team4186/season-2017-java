@@ -1,4 +1,3 @@
-
 package org.usfirst.frc.team4186.robot;
 
 import com.kauailabs.navx.frc.AHRS;
@@ -31,6 +30,7 @@ public class Robot extends IterativeRobot {
     private Climber climber = new Climber(motors.climberMotor());
     //// Sensors
     private Compass compass = new Compass(ahrs);
+    private MotionDetector motionDetector = new MotionDetector(ahrs);
     private Odometer odometer = new Odometer(encoder);
     private DistanceEstimator distanceEstimator = new DistanceEstimator(sonar);
 
@@ -101,10 +101,27 @@ public class Robot extends IterativeRobot {
             }
         });
 
-        steering.start();
+        KeepDistance kd = new KeepDistance(driveTrain, distanceEstimator, motionDetector, 1.0);
+        oi.fire.whenActive(kd);
+        oi.fire.whenInactive(new InstantCommand() {
+            @Override
+            protected void execute() {
+                kd.cancel();
+            }
+        });
+
+        // TODO this is to test KeepDistance command, just start steering when done
+        oi.pinkyTrigger.whenActive(steering);
+        oi.pinkyTrigger.whenInactive(new InstantCommand() {
+            @Override
+            protected void execute() {
+                steering.cancel();
+            }
+        });
     }
 
     public void teleopPeriodic() {
+        updateDashboard();
         Scheduler.getInstance().run();
     }
 
@@ -119,7 +136,7 @@ public class Robot extends IterativeRobot {
     }
 
     private Command autonomousGoForward() {
-        return new KeepDistance(driveTrain, distanceEstimator, 0.0);
+        return new KeepDistance(driveTrain, distanceEstimator, motionDetector, 0.0);
     }
 
     private Command autonomousTurnLeft() {
@@ -132,9 +149,33 @@ public class Robot extends IterativeRobot {
 
     private Command autonomousTurn(double angle) {
         CommandGroup cmd = new CommandGroup();
-        cmd.addSequential(new KeepDistance(driveTrain, distanceEstimator, 264.7));
+        cmd.addSequential(new KeepDistance(driveTrain, distanceEstimator, motionDetector, 264.7));
         cmd.addSequential(new Turn(driveTrain, compass, angle));
-        cmd.addSequential(new KeepDistance(driveTrain, distanceEstimator, 0.0));
+        cmd.addSequential(new KeepDistance(driveTrain, distanceEstimator, motionDetector, 0.0));
         return cmd;
+    }
+
+    private void updateDashboard() {
+        final double throttle = oi.joystick.getY();
+        final double yaw = oi.joystick.getTwist();
+
+        SmartDashboard.putNumber("throttle", throttle);
+        SmartDashboard.putNumber("turn", yaw);
+
+        SmartDashboard.putNumber("distance", distanceEstimator.pidGet());
+
+        SmartDashboard.putBoolean("rotating", compass.isRotating());
+        SmartDashboard.putNumber("gyro", compass.getHeading());
+        SmartDashboard.putNumber("yaw", compass.pidGet());
+
+        SmartDashboard.putBoolean("moving", motionDetector.isMoving());
+        SmartDashboard.putNumber("velocity[X]", motionDetector.getVelocityX());
+        SmartDashboard.putNumber("velocity[Y]", motionDetector.getVelocityY());
+        SmartDashboard.putNumber("velocity[Z]", motionDetector.getVelocityZ());
+        SmartDashboard.putNumber("velocity", motionDetector.getSpeed());
+        SmartDashboard.putNumber("acceleration[X]", motionDetector.getAccelerationX());
+        SmartDashboard.putNumber("acceleration[Y]", motionDetector.getAccelerationY());
+        SmartDashboard.putNumber("acceleration[Z]", motionDetector.getAccelerationZ());
+        SmartDashboard.putNumber("acceleration", motionDetector.getAccelerationMagnitude());
     }
 }

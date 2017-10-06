@@ -1,40 +1,54 @@
 package org.usfirst.frc.team4186.robot.subsystems;
 
 import com.kauailabs.navx.frc.AHRS;
-
 import edu.wpi.first.wpilibj.PIDSource;
 import edu.wpi.first.wpilibj.PIDSourceType;
 import edu.wpi.first.wpilibj.command.Subsystem;
+import edu.wpi.first.wpilibj.tables.ITable;
 
 public class Compass extends Subsystem implements PIDSource {
-	private final AHRS ahrs;
+    private final AHRS ahrs;
 
-	public Compass(AHRS ahrs) {
-		this.ahrs = ahrs;
-	}
+    public Compass(AHRS ahrs) {
+        this.ahrs = ahrs;
+    }
 
-	@Override
-	public void initDefaultCommand() {
-		// Set the default command for a subsystem here.
-		// setDefaultCommand(new MySpecialCommand());
-	}
+    @Override
+    public void initDefaultCommand() {
+        // Set the default command for a subsystem here.
+        // setDefaultCommand(new MySpecialCommand());
+    }
 
-	@Override
-	public void setPIDSourceType(PIDSourceType pidSource) {
-		ahrs.setPIDSourceType(pidSource);
-	}
+    public double getHeading() {
+        return ahrs.getFusedHeading();
+    }
 
-	@Override
-	public PIDSourceType getPIDSourceType() {
-		return ahrs.getPIDSourceType();
-	}
+    public boolean isRotating() {
+        return ahrs.isRotating();
+    }
 
-	@Override
-	public double pidGet() {
-		return ahrs.pidGet();
-	}
+    @Override
+    public void setPIDSourceType(PIDSourceType pidSource) {
+        ahrs.setPIDSourceType(pidSource);
+    }
 
-	public void reset() {
-		ahrs.reset();
-	}
+    @Override
+    public PIDSourceType getPIDSourceType() {
+        return ahrs.getPIDSourceType();
+    }
+
+    @Override
+    public double pidGet() {
+        return ahrs.pidGet();
+    }
+
+    public void reset() {
+        ahrs.reset();
+    }
+
+    @Override
+    public void initTable(ITable table) {
+        super.initTable(table);
+        table.putNumber("gyro", pidGet());
+    }
 }

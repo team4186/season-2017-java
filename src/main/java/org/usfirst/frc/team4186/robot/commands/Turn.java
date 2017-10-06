@@ -14,18 +14,22 @@ public class Turn extends Command {
     private Compass compass;
     private double angle;
 
+    private double power = 0;
+
     public Turn(DriveTrain driveTrain, Compass compass, double angle) {
         super("Turn " + angle);
-        this.compass = compass;
-
         requires(driveTrain);
+        requires(compass);
+
+        this.compass = compass;
         this.driveTrain = driveTrain;
         this.angle = angle;
 
+        // TODO need to tune this K's
         pid = new PIDController(0.03, 0, 0, compass, new PIDOutput() {
             @Override
             public void pidWrite(double output) {
-                driveTrain.tankDrive(output, -output);
+                power = output;
             }
         });
 
@@ -50,6 +54,7 @@ public class Turn extends Command {
 
     @Override
     protected void execute() {
+        driveTrain.tankDrive(power, -power);
     }
 
     @Override

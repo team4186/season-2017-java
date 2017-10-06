@@ -11,7 +11,7 @@ public class DriveTime extends Command {
     private long end;// in meters
 
     public DriveTime(DriveTrain driveTrain, long duration, double power) {
-        super("DriveTime");
+        super(String.format("Drive For %.02f seconds at %.02f power", duration / 1000f, power));
 
         requires(driveTrain);
         this.driveTrain = driveTrain;
