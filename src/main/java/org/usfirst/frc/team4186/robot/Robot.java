@@ -118,6 +118,28 @@ public class Robot extends IterativeRobot {
                 steering.cancel();
             }
         });
+
+        {
+            Turn turn = new Turn(driveTrain, compass, motionDetector, 90);
+
+            oi.t1.whenActive(turn);
+            oi.t1.whenInactive(new InstantCommand() {
+                @Override
+                protected void execute() {
+                    turn.cancel();
+                }
+            });
+        }
+        {
+            Turn turn = new Turn(driveTrain, compass, motionDetector , -90);
+            oi.t2.whenActive(turn);
+            oi.t2.whenInactive(new InstantCommand() {
+                @Override
+                protected void execute() {
+                    turn.cancel();
+                }
+            });
+        }
     }
 
     public void teleopPeriodic() {
@@ -150,7 +172,7 @@ public class Robot extends IterativeRobot {
     private Command autonomousTurn(double angle) {
         CommandGroup cmd = new CommandGroup();
         cmd.addSequential(new KeepDistance(driveTrain, distanceEstimator, motionDetector, 264.7));
-        cmd.addSequential(new Turn(driveTrain, compass, angle));
+        cmd.addSequential(new Turn(driveTrain, compass, motionDetector, angle));
         cmd.addSequential(new KeepDistance(driveTrain, distanceEstimator, motionDetector, 0.0));
         return cmd;
     }

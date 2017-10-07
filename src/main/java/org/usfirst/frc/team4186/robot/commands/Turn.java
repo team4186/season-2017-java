@@ -5,6 +5,7 @@ import edu.wpi.first.wpilibj.PIDOutput;
 import edu.wpi.first.wpilibj.command.Command;
 import org.usfirst.frc.team4186.robot.subsystems.Compass;
 import org.usfirst.frc.team4186.robot.subsystems.DriveTrain;
+import org.usfirst.frc.team4186.robot.subsystems.MotionDetector;
 
 public class Turn extends Command {
 
@@ -15,18 +16,20 @@ public class Turn extends Command {
     private double angle;
 
     private double power = 0;
+    private MotionDetector motionDetector;
 
-    public Turn(DriveTrain driveTrain, Compass compass, double angle) {
+    public Turn(DriveTrain driveTrain, Compass compass, MotionDetector motionDetector, double angle) {
         super("Turn " + angle);
         requires(driveTrain);
         requires(compass);
 
         this.compass = compass;
+        this.motionDetector = motionDetector;
         this.driveTrain = driveTrain;
         this.angle = angle;
 
         // TODO need to tune this K's
-        pid = new PIDController(0.03, 0, 0, compass, new PIDOutput() {
+        pid = new PIDController(0.01, 0.0, 0.0, compass, new PIDOutput() {
             @Override
             public void pidWrite(double output) {
                 power = output;
@@ -34,8 +37,8 @@ public class Turn extends Command {
         });
 
         pid.setInputRange(-180, 180);
-        pid.setAbsoluteTolerance(2);
-        pid.setOutputRange(-1, 1);
+        pid.setAbsoluteTolerance(0.5);
+        pid.setOutputRange(-0.5, 0.5);
         pid.setContinuous(true);
         pid.disable();
     }
@@ -49,12 +52,15 @@ public class Turn extends Command {
 
     @Override
     protected boolean isFinished() {
-        return pid.onTarget();
+        return pid.onTarget() && !motionDetector.isMoving() && !compass.isRotating();
     }
 
     @Override
     protected void execute() {
-        driveTrain.tankDrive(power, -power);
+
+        double corrected = (power * 0.6) + Math.copySign(power, 0.4);
+        System.out.printf("Turn=%s Power=%s Error=%.0f\n", power, corrected, pid.getError());
+        driveTrain.tankDrive(-corrected, corrected);
     }
 
     @Override
