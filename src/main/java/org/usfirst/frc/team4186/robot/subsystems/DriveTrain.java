@@ -16,18 +16,19 @@ public class DriveTrain extends Subsystem {
     }
 
     public void arcadeDrive(double moveValue, double rotateValue) {
-        drive.arcadeDrive(moveValue, rotateValue);
+        drive.arcadeDrive(inertiaPowerCorrection(moveValue), inertiaPowerCorrection(rotateValue));
     }
 
     public void tankDrive(double left, double right) {
-        drive.tankDrive(left, right);
-    }
-
-    public void drive(double power, double curve) {
-        drive.drive(power, curve);
+        drive.tankDrive(left, right, false);
     }
 
     public void stop() {
         drive.stopMotor();
+    }
+
+    private double inertiaPowerCorrection(double power) {
+        final double deadzone = 0.3;
+        return (power * (1 - deadzone)) + Math.copySign(deadzone, power);
     }
 }

@@ -1,10 +1,8 @@
 package org.usfirst.frc.team4186.robot;
 
+import com.ctre.MotorControl.CANTalon;
 import com.kauailabs.navx.frc.AHRS;
-import edu.wpi.first.wpilibj.AnalogInput;
-import edu.wpi.first.wpilibj.Encoder;
-import edu.wpi.first.wpilibj.IterativeRobot;
-import edu.wpi.first.wpilibj.SPI;
+import edu.wpi.first.wpilibj.*;
 import edu.wpi.first.wpilibj.command.*;
 import edu.wpi.first.wpilibj.livewindow.LiveWindow;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -23,11 +21,16 @@ public class Robot extends IterativeRobot {
     private AHRS ahrs = new AHRS(SPI.Port.kMXP);
     private Encoder encoder = new Encoder(RobotMap.SENSORS.ENCODER_0, RobotMap.SENSORS.ENCODER_1);
     private AnalogInput sonar = new AnalogInput(RobotMap.SENSORS.SONAR_0);
+    private PowerDistributionPanel pdp = new PowerDistributionPanel();
+
+    private SpeedController leftMotor = motors.leftMotor();
+    private SpeedController rightMotor = motors.rightMotor();
+    private SpeedController climberMotor = motors.climberMotor();
 
     // Sub systems
     //// Actuators
-    private DriveTrain driveTrain = new DriveTrain(motors.leftMotor(), motors.rightMotor());
-    private Climber climber = new Climber(motors.climberMotor());
+    private DriveTrain driveTrain = new DriveTrain(leftMotor, rightMotor);
+    private Climber climber = new Climber(climberMotor);
     //// Sensors
     private Compass compass = new Compass(ahrs);
     private MotionDetector motionDetector = new MotionDetector(ahrs);
@@ -180,6 +183,20 @@ public class Robot extends IterativeRobot {
     private void updateDashboard() {
         final double throttle = oi.joystick.getY();
         final double yaw = oi.joystick.getTwist();
+
+        SmartDashboard.putNumber("PDP power", pdp.getTotalPower());
+        SmartDashboard.putNumber("PDP energy", pdp.getTotalEnergy());
+        SmartDashboard.putNumber("PDP current", pdp.getTotalCurrent());
+
+        // TODO unchecked cast can crash the robot!!
+        SmartDashboard.putNumber("LeftMotor current", ((CANTalon)leftMotor).getOutputCurrent());
+        SmartDashboard.putNumber("LeftMotor voltage", ((CANTalon)leftMotor).getOutputVoltage());
+
+        SmartDashboard.putNumber("RightMotor current", ((CANTalon)rightMotor).getOutputCurrent());
+        SmartDashboard.putNumber("RightMotor voltage", ((CANTalon)rightMotor).getOutputVoltage());
+
+        SmartDashboard.putNumber("Climber current", ((CANTalon)climberMotor).getOutputCurrent());
+        SmartDashboard.putNumber("Climber voltage", ((CANTalon)climberMotor).getOutputVoltage());
 
         SmartDashboard.putNumber("throttle", throttle);
         SmartDashboard.putNumber("turn", yaw);

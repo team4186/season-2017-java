@@ -57,10 +57,7 @@ public class Turn extends Command {
 
     @Override
     protected void execute() {
-
-        double corrected = (power * 0.6) + Math.copySign(power, 0.4);
-        System.out.printf("Turn=%s Power=%s Error=%.0f\n", power, corrected, pid.getError());
-        driveTrain.tankDrive(-corrected, corrected);
+        driveTrain.tankDrive(-power, power);
     }
 
     @Override
