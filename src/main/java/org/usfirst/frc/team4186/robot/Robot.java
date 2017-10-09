@@ -1,220 +1,261 @@
 package org.usfirst.frc.team4186.robot;
 
-import com.ctre.MotorControl.CANTalon;
+import org.usfirst.frc.team4186.robot.commands.ClimbDown;
+import org.usfirst.frc.team4186.robot.commands.ClimbUp;
+import org.usfirst.frc.team4186.robot.commands.DriveDistance;
+import org.usfirst.frc.team4186.robot.commands.KeepDistance;
+import org.usfirst.frc.team4186.robot.commands.Steering;
+import org.usfirst.frc.team4186.robot.commands.Turn;
+import org.usfirst.frc.team4186.robot.factories.CANConfigFactory;
+import org.usfirst.frc.team4186.robot.factories.MotorFactory;
+import org.usfirst.frc.team4186.robot.subsystems.Climber;
+import org.usfirst.frc.team4186.robot.subsystems.Compass;
+import org.usfirst.frc.team4186.robot.subsystems.DistanceEstimator;
+import org.usfirst.frc.team4186.robot.subsystems.DriveTrain;
+import org.usfirst.frc.team4186.robot.subsystems.MotionDetector;
+
 import com.kauailabs.navx.frc.AHRS;
-import edu.wpi.first.wpilibj.*;
-import edu.wpi.first.wpilibj.command.*;
+
+import edu.wpi.first.wpilibj.AnalogInput;
+import edu.wpi.first.wpilibj.CameraServer;
+import edu.wpi.first.wpilibj.IterativeRobot;
+import edu.wpi.first.wpilibj.SPI;
+import edu.wpi.first.wpilibj.SpeedController;
+import edu.wpi.first.wpilibj.Ultrasonic;
+import edu.wpi.first.wpilibj.command.Command;
+import edu.wpi.first.wpilibj.command.CommandGroup;
+import edu.wpi.first.wpilibj.command.InstantCommand;
+import edu.wpi.first.wpilibj.command.PrintCommand;
+import edu.wpi.first.wpilibj.command.Scheduler;
 import edu.wpi.first.wpilibj.livewindow.LiveWindow;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import org.usfirst.frc.team4186.robot.commands.*;
-import org.usfirst.frc.team4186.robot.factories.CANConfigFactory;
-import org.usfirst.frc.team4186.robot.factories.MotorFactory;
-import org.usfirst.frc.team4186.robot.subsystems.*;
 
 public class Robot extends IterativeRobot {
 
-    private OI oi = new OI();
+	private OI oi = new OI();
 
-    // Hardware
-    private MotorFactory motors = new CANConfigFactory();
-    private AHRS ahrs = new AHRS(SPI.Port.kMXP);
-    private Encoder encoder = new Encoder(RobotMap.SENSORS.ENCODER_0, RobotMap.SENSORS.ENCODER_1);
-    private AnalogInput sonar = new AnalogInput(RobotMap.SENSORS.SONAR_0);
-    private PowerDistributionPanel pdp = new PowerDistributionPanel();
+	// Hardware
+	private MotorFactory motors = new CANConfigFactory();
+	private AHRS ahrs = new AHRS(SPI.Port.kMXP);
+	private AnalogInput sonar = new AnalogInput(RobotMap.SENSORS.SONAR_0);
+	private Ultrasonic shortRangeSonar = new Ultrasonic(1, 0);
 
-    private SpeedController leftMotor = motors.leftMotor();
-    private SpeedController rightMotor = motors.rightMotor();
-    private SpeedController climberMotor = motors.climberMotor();
+	private SpeedController leftMotor = motors.leftMotor();
+	private SpeedController rightMotor = motors.rightMotor();
+	private SpeedController climberMotor = motors.climberMotor();
 
-    // Sub systems
-    //// Actuators
-    private DriveTrain driveTrain = new DriveTrain(leftMotor, rightMotor);
-    private Climber climber = new Climber(climberMotor);
-    //// Sensors
-    private Compass compass = new Compass(ahrs);
-    private MotionDetector motionDetector = new MotionDetector(ahrs);
-    private Odometer odometer = new Odometer(encoder);
-    private DistanceEstimator distanceEstimator = new DistanceEstimator(sonar);
+	// Sub systems
+	//// Actuators
+	private DriveTrain driveTrain = new DriveTrain(leftMotor, rightMotor);
+	private Climber climber = new Climber(climberMotor);
+	//// Sensors
+	private Compass compass = new Compass(ahrs);
+	private MotionDetector motionDetector = new MotionDetector(ahrs);
+	private DistanceEstimator distanceEstimator = new DistanceEstimator(sonar, shortRangeSonar);
 
-    // Commands
-    private ClimbUp climbUp = new ClimbUp(climber);
-    private ClimbDown climbDown = new ClimbDown(climber);
-    private Steering steering = new Steering(driveTrain, oi.joystick);
+	// Commands
+	private ClimbUp climbUp = new ClimbUp(climber);
+	private ClimbDown climbDown = new ClimbDown(climber);
+	private Steering steering = new Steering(driveTrain, oi.joystick);
 
-    // Autonomous
-    private Command autonomousCommand = new PrintCommand("I'm an empty Autonomous!");
-    private SendableChooser<Command> chooser;
+	// Autonomous
+	private Command autonomousCommand = new PrintCommand("I'm an empty Autonomous!");
+	private SendableChooser<Command> chooser;
 
-    public void robotInit() {
-        oi = new OI();
+	public void robotInit() {
 
-        chooser = new SendableChooser<>();
-        chooser.addDefault("Go Straight", autonomousGoForward());
-        chooser.addObject("Turn Left", autonomousTurnLeft());
-        chooser.addObject("Turn Right", autonomousTurnRight());
-        SmartDashboard.putData("Auto mode", chooser);
+		CameraServer.getInstance().startAutomaticCapture(0);
+		CameraServer.getInstance().startAutomaticCapture(1);
 
-    }
+		oi = new OI();
 
-    public void disabledInit() {
-        autonomousCommand.cancel();
-        climbUp.cancel();
-        climbDown.cancel();
-        steering.cancel();
-    }
+		chooser = new SendableChooser<>();
+		chooser.addDefault("Go Straight", autonomousGoForward());
+		chooser.addObject("Turn Left", autonomousTurnLeft());
+		chooser.addObject("Turn Right", autonomousTurnRight());
+		SmartDashboard.putData("Auto mode", chooser);
 
-    public void disabledPeriodic() {
-        Scheduler.getInstance().run();
-    }
+		distanceEstimator.setup();
+	}
 
-    public void autonomousInit() {
-        /*
-         * String autoSelected = SmartDashboard.getString("Auto Selector",
-		 * "Default"); switch(autoSelected) { case "My Auto": autonomousCommand
-		 * = new MyAutoCommand(); break; case "Default Auto": default:
-		 * autonomousCommand = new ExampleCommand(); break; }
-		 */
+	public void disabledInit() {
+		autonomousCommand.cancel();
+		climbUp.cancel();
+		climbDown.cancel();
+		steering.cancel();
+	}
 
-        autonomousCommand = getSelectedAutonomous();
-        autonomousCommand.start();
-    }
+	public void disabledPeriodic() {
+		Scheduler.getInstance().run();
+	}
 
-    /**
-     * This function is called periodically during autonomous
-     */
-    public void autonomousPeriodic() {
-        Scheduler.getInstance().run();
-    }
+	public void autonomousInit() {
+		autonomousCommand = getSelectedAutonomous();
+		autonomousCommand.start();
+	}
 
-    public void teleopInit() {
-        oi.dPadUp.whenActive(climbUp);
-        oi.dPadUp.whenInactive(new InstantCommand() {
-            @Override
-            protected void execute() {
-                climbUp.cancel();
-            }
-        });
+	/**
+	 * This function is called periodically during autonomous
+	 */
+	public void autonomousPeriodic() {
+		Scheduler.getInstance().run();
+	}
 
-        oi.dPadDown.whenActive(climbDown);
-        oi.dPadDown.whenInactive(new InstantCommand() {
-            @Override
-            protected void execute() {
-                climbDown.cancel();
-            }
-        });
+	public void teleopInit() {
+		oi.dPadUp.whenActive(climbUp);
+		oi.dPadUp.whenInactive(new InstantCommand() {
+			@Override
+			protected void execute() {
+				climbUp.cancel();
+			}
 
-        KeepDistance kd = new KeepDistance(driveTrain, distanceEstimator, motionDetector, 1.0);
-        oi.fire.whenActive(kd);
-        oi.fire.whenInactive(new InstantCommand() {
-            @Override
-            protected void execute() {
-                kd.cancel();
-            }
-        });
+		});
 
-        // TODO this is to test KeepDistance command, just start steering when done
-        oi.pinkyTrigger.whenActive(steering);
-        oi.pinkyTrigger.whenInactive(new InstantCommand() {
-            @Override
-            protected void execute() {
-                steering.cancel();
-            }
-        });
+		oi.dPadDown.whenActive(climbDown);
+		oi.dPadDown.whenInactive(new InstantCommand() {
+			@Override
+			protected void execute() {
+				climbDown.cancel();
+			}
+		});
 
-        {
-            Turn turn = new Turn(driveTrain, compass, motionDetector, 90);
+		Command kd = new DriveDistance(driveTrain, motionDetector, 250.0, 0.4);//new KeepDistance(driveTrain, distanceEstimator, motionDetector, 1.0);
+		oi.fire.whenActive(kd);
+		oi.fire.whenInactive(new InstantCommand() {
+			@Override
+			protected void execute() {
+				kd.cancel();
+			}
 
-            oi.t1.whenActive(turn);
-            oi.t1.whenInactive(new InstantCommand() {
-                @Override
-                protected void execute() {
-                    turn.cancel();
-                }
-            });
-        }
-        {
-            Turn turn = new Turn(driveTrain, compass, motionDetector , -90);
-            oi.t2.whenActive(turn);
-            oi.t2.whenInactive(new InstantCommand() {
-                @Override
-                protected void execute() {
-                    turn.cancel();
-                }
-            });
-        }
-    }
+			@Override
+			protected void end() {
+				steering.start();
+			}
+		});
 
-    public void teleopPeriodic() {
-        updateDashboard();
-        Scheduler.getInstance().run();
-    }
+		steering.start();
 
-    public void testPeriodic() {
-        LiveWindow.run();
-    }
+		{
+			Turn turn = new Turn(driveTrain, compass, motionDetector, 90);
 
+			oi.t1.whenActive(turn);
+			oi.t1.whenInactive(new InstantCommand() {
+				@Override
+				protected void execute() {
+					turn.cancel();
+				}
 
-    private Command getSelectedAutonomous() {
-        Command selected = chooser.getSelected();
-        return selected != null ? selected : new PrintCommand("I'm an empty Autonomous!");
-    }
+				@Override
+				protected void end() {
+					steering.start();
+				}
+			});
+		}
+		{
+			Turn turn = new Turn(driveTrain, compass, motionDetector, -90);
+			oi.t2.whenActive(turn);
+			oi.t2.whenInactive(new InstantCommand() {
+				@Override
+				protected void execute() {
+					turn.cancel();
+				}
 
-    private Command autonomousGoForward() {
-        return new KeepDistance(driveTrain, distanceEstimator, motionDetector, 0.0);
-    }
+				@Override
+				protected void end() {
+					steering.start();
+				}
+			});
+		}
 
-    private Command autonomousTurnLeft() {
-        return autonomousTurn(-60);
-    }
+		oi.buttonB.whenPressed(new InstantCommand() {
+			@Override
+			protected void execute() {
+				driveTrain.switch_mode();
+			}
+		});
+	}
 
-    private Command autonomousTurnRight() {
-        return autonomousTurn(60);
-    }
+	public void teleopPeriodic() {
+		updateDashboard();
+		Scheduler.getInstance().run();
+	}
 
-    private Command autonomousTurn(double angle) {
-        CommandGroup cmd = new CommandGroup();
-        cmd.addSequential(new KeepDistance(driveTrain, distanceEstimator, motionDetector, 264.7));
-        cmd.addSequential(new Turn(driveTrain, compass, motionDetector, angle));
-        cmd.addSequential(new KeepDistance(driveTrain, distanceEstimator, motionDetector, 0.0));
-        return cmd;
-    }
+	public void testPeriodic() {
+		LiveWindow.run();
+	}
 
-    private void updateDashboard() {
-        final double throttle = oi.joystick.getY();
-        final double yaw = oi.joystick.getTwist();
+	private Command getSelectedAutonomous() {
+		Command selected = chooser.getSelected();
+		return selected != null ? selected : new PrintCommand("I'm an empty Autonomous!");
+	}
 
-        SmartDashboard.putNumber("PDP power", pdp.getTotalPower());
-        SmartDashboard.putNumber("PDP energy", pdp.getTotalEnergy());
-        SmartDashboard.putNumber("PDP current", pdp.getTotalCurrent());
+	private Command autonomousGoForward() {
+		return new KeepDistance(driveTrain, distanceEstimator, motionDetector, 0.1);
+	}
 
-        // TODO unchecked cast can crash the robot!!
-        SmartDashboard.putNumber("LeftMotor current", ((CANTalon)leftMotor).getOutputCurrent());
-        SmartDashboard.putNumber("LeftMotor voltage", ((CANTalon)leftMotor).getOutputVoltage());
+	private Command autonomousTurnLeft() {
+		return autonomousTurn(-120);
+	}
 
-        SmartDashboard.putNumber("RightMotor current", ((CANTalon)rightMotor).getOutputCurrent());
-        SmartDashboard.putNumber("RightMotor voltage", ((CANTalon)rightMotor).getOutputVoltage());
+	private Command autonomousTurnRight() {
+		return autonomousTurn(120);
+	}
 
-        SmartDashboard.putNumber("Climber current", ((CANTalon)climberMotor).getOutputCurrent());
-        SmartDashboard.putNumber("Climber voltage", ((CANTalon)climberMotor).getOutputVoltage());
+	private Command autonomousTurn(double angle) {
+		CommandGroup cmd = new CommandGroup();
+		cmd.addSequential(new KeepDistance(driveTrain, distanceEstimator, motionDetector, 264.7));
+		cmd.addSequential(new Turn(driveTrain, compass, motionDetector, angle));
+		//cmd.addSequential(new KeepDistance(driveTrain, distanceEstimator, motionDetector, 0.1));
+		return cmd;
+	}
 
-        SmartDashboard.putNumber("throttle", throttle);
-        SmartDashboard.putNumber("turn", yaw);
+	private void updateDashboard() {
+		// final double throttle = oi.joystick.getY();
+		// final double yaw = oi.joystick.getTwist();
 
-        SmartDashboard.putNumber("distance", distanceEstimator.pidGet());
+		// TODO unchecked cast can crash the robot!!
+		// SmartDashboard.putNumber("LeftMotor current", ((CANTalon)
+		// leftMotor).getOutputCurrent());
+		// SmartDashboard.putNumber("LeftMotor voltage", ((CANTalon)
+		// leftMotor).getOutputVoltage());
+		//
+		// SmartDashboard.putNumber("RightMotor current", ((CANTalon)
+		// rightMotor).getOutputCurrent());
+		// SmartDashboard.putNumber("RightMotor voltage", ((CANTalon)
+		// rightMotor).getOutputVoltage());
+		//
+		// SmartDashboard.putNumber("Climber current", ((CANTalon)
+		// climberMotor).getOutputCurrent());
+		// SmartDashboard.putNumber("Climber voltage", ((CANTalon)
+		// climberMotor).getOutputVoltage());
+		//
+		// SmartDashboard.putNumber("throttle", throttle);
+		// SmartDashboard.putNumber("turn", yaw);
 
-        SmartDashboard.putBoolean("rotating", compass.isRotating());
-        SmartDashboard.putNumber("gyro", compass.getHeading());
-        SmartDashboard.putNumber("yaw", compass.pidGet());
+		SmartDashboard.putNumber("distance", distanceEstimator.pidGet());
+		SmartDashboard.putNumber("distance short range", shortRangeSonar.getRangeMM() / 1000.0);
+		SmartDashboard.putNumber("distance long range", sonar.pidGet());
 
-        SmartDashboard.putBoolean("moving", motionDetector.isMoving());
-        SmartDashboard.putNumber("velocity[X]", motionDetector.getVelocityX());
-        SmartDashboard.putNumber("velocity[Y]", motionDetector.getVelocityY());
-        SmartDashboard.putNumber("velocity[Z]", motionDetector.getVelocityZ());
-        SmartDashboard.putNumber("velocity", motionDetector.getSpeed());
-        SmartDashboard.putNumber("acceleration[X]", motionDetector.getAccelerationX());
-        SmartDashboard.putNumber("acceleration[Y]", motionDetector.getAccelerationY());
-        SmartDashboard.putNumber("acceleration[Z]", motionDetector.getAccelerationZ());
-        SmartDashboard.putNumber("acceleration", motionDetector.getAccelerationMagnitude());
-    }
+		// SmartDashboard.putBoolean("rotating", compass.isRotating());
+		// SmartDashboard.putNumber("gyro", compass.getHeading());
+		// SmartDashboard.putNumber("yaw", compass.pidGet());
+		//
+		// SmartDashboard.putBoolean("moving", motionDetector.isMoving());
+		// SmartDashboard.putNumber("velocity[X]",
+		// motionDetector.getVelocityX());
+		// SmartDashboard.putNumber("velocity[Y]",
+		// motionDetector.getVelocityY());
+		// SmartDashboard.putNumber("velocity[Z]",
+		// motionDetector.getVelocityZ());
+		// SmartDashboard.putNumber("velocity", motionDetector.getSpeed());
+		// SmartDashboard.putNumber("acceleration[X]",
+		// motionDetector.getAccelerationX());
+		// SmartDashboard.putNumber("acceleration[Y]",
+		// motionDetector.getAccelerationY());
+		// SmartDashboard.putNumber("acceleration[Z]",
+		// motionDetector.getAccelerationZ());
+		// SmartDashboard.putNumber("acceleration",
+		// motionDetector.getAccelerationMagnitude());
+	}
 }
