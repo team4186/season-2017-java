@@ -4,6 +4,7 @@ import edu.wpi.first.wpilibj.AnalogInput;
 import edu.wpi.first.wpilibj.PIDSource;
 import edu.wpi.first.wpilibj.PIDSourceType;
 import edu.wpi.first.wpilibj.command.Subsystem;
+import edu.wpi.first.wpilibj.tables.ITable;
 
 public class DistanceEstimator extends Subsystem implements PIDSource {
 
@@ -33,5 +34,11 @@ public class DistanceEstimator extends Subsystem implements PIDSource {
     @Override
     public double pidGet() {
         return sonar.pidGet();
+    }
+
+    @Override
+    public void initTable(ITable table) {
+        super.initTable(table);
+        table.putNumber("distance", pidGet());
     }
 }

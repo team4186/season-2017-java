@@ -5,28 +5,30 @@ import edu.wpi.first.wpilibj.SpeedController;
 import edu.wpi.first.wpilibj.command.Subsystem;
 
 public class DriveTrain extends Subsystem {
-	private final RobotDrive drive;
+    private final RobotDrive drive;
 
-	public DriveTrain(SpeedController left, SpeedController right) {
-		drive = new RobotDrive(left, right);
-	}
+    public DriveTrain(SpeedController left, SpeedController right) {
+        drive = new RobotDrive(left, right);
+        drive.setSafetyEnabled(false);
+    }
 
-	public void initDefaultCommand() {
-	}
+    public void initDefaultCommand() {
+    }
 
-	public void arcadeDrive(double moveValue, double rotateValue) {
-		drive.arcadeDrive(moveValue, rotateValue);
-	}
+    public void arcadeDrive(double moveValue, double rotateValue) {
+        drive.arcadeDrive(inertiaPowerCorrection(moveValue), inertiaPowerCorrection(rotateValue));
+    }
 
-	public void tankDrive(double left, double right) {
-		drive.tankDrive(left, right);
-	}
-	
-	public void drive(double power, double curve) {
-		drive.drive(power, curve);
-	}
+    public void tankDrive(double left, double right) {
+        drive.tankDrive(left, right, false);
+    }
 
-	public void stop() {
-		arcadeDrive(0, 0);
-	}
+    public void stop() {
+        drive.stopMotor();
+    }
+
+    private double inertiaPowerCorrection(double power) {
+        final double deadzone = 0.3;
+        return (power * (1 - deadzone)) + Math.copySign(deadzone, power);
+    }
 }

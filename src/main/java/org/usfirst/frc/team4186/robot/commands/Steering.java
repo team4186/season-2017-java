@@ -11,6 +11,7 @@ public class Steering extends Command {
 
     public Steering(DriveTrain driveTrain, Joystick joystick) {
         super("Steering");
+        setInterruptible(true);
         requires(driveTrain);
 
         this.driveTrain = driveTrain;
@@ -18,7 +19,10 @@ public class Steering extends Command {
     }
 
     protected void execute() {
-        driveTrain.arcadeDrive(joystick.getY(), joystick.getTwist());
+        final double throttle = joystick.getY();
+        final double yaw = joystick.getTwist();
+
+        driveTrain.arcadeDrive(throttle, yaw);
     }
 
     protected boolean isFinished() {
