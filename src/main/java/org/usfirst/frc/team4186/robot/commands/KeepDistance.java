@@ -25,7 +25,7 @@ public class KeepDistance extends Command {
         this.distance = Math.max(Math.min(3, distance), 0.05);
 
         // TODO need to tune this K's
-        pid = new PIDController(0.1, 0.0, 0.0, distanceEstimator, new PIDOutput() {
+        pid = new PIDController(0.038, 0.00003, 0.0, distanceEstimator, new PIDOutput() {
             @Override
             public void pidWrite(double output) {
                 power = -output;
@@ -33,7 +33,7 @@ public class KeepDistance extends Command {
         });
 
         pid.setInputRange(0, 3);
-        pid.setAbsoluteTolerance(0.01);
+        pid.setAbsoluteTolerance(0.1);
         pid.setOutputRange(-0.5, 0.5);
         pid.setContinuous(false);
         pid.disable();
@@ -55,6 +55,8 @@ public class KeepDistance extends Command {
     @Override
     protected void execute() {
         driveTrain.tankDrive(power, power);
+    	//driveTrain.tankDrive(0,0);
+    	//System.out.printf("error:%.02f->power:%.02f\n",pid.getError(), power);
     }
 
     @Override

@@ -100,6 +100,7 @@ public class Robot extends IterativeRobot {
 	 */
 	public void autonomousPeriodic() {
 		Scheduler.getInstance().run();
+		updateDashboard();
 	}
 
 	public void teleopInit() {
@@ -120,53 +121,7 @@ public class Robot extends IterativeRobot {
 			}
 		});
 
-		Command kd = new DriveDistance(driveTrain, motionDetector, 250.0, 0.4);//new KeepDistance(driveTrain, distanceEstimator, motionDetector, 1.0);
-		oi.fire.whenActive(kd);
-		oi.fire.whenInactive(new InstantCommand() {
-			@Override
-			protected void execute() {
-				kd.cancel();
-			}
-
-			@Override
-			protected void end() {
-				steering.start();
-			}
-		});
-
 		steering.start();
-
-		{
-			Turn turn = new Turn(driveTrain, compass, motionDetector, 90);
-
-			oi.t1.whenActive(turn);
-			oi.t1.whenInactive(new InstantCommand() {
-				@Override
-				protected void execute() {
-					turn.cancel();
-				}
-
-				@Override
-				protected void end() {
-					steering.start();
-				}
-			});
-		}
-		{
-			Turn turn = new Turn(driveTrain, compass, motionDetector, -90);
-			oi.t2.whenActive(turn);
-			oi.t2.whenInactive(new InstantCommand() {
-				@Override
-				protected void execute() {
-					turn.cancel();
-				}
-
-				@Override
-				protected void end() {
-					steering.start();
-				}
-			});
-		}
 
 		oi.buttonB.whenPressed(new InstantCommand() {
 			@Override
@@ -204,7 +159,7 @@ public class Robot extends IterativeRobot {
 
 	private Command autonomousTurn(double angle) {
 		CommandGroup cmd = new CommandGroup();
-		cmd.addSequential(new KeepDistance(driveTrain, distanceEstimator, motionDetector, 264.7));
+		cmd.addSequential(new KeepDistance(driveTrain, distanceEstimator, motionDetector, 2.50/*264.7*/));
 		cmd.addSequential(new Turn(driveTrain, compass, motionDetector, angle));
 		//cmd.addSequential(new KeepDistance(driveTrain, distanceEstimator, motionDetector, 0.1));
 		return cmd;
