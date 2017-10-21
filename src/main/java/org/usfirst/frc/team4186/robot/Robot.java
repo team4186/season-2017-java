@@ -72,8 +72,9 @@ public class Robot extends IterativeRobot {
 
 		chooser = new SendableChooser<>();
 		chooser.addDefault("Go Straight", autonomousGoForward());
-		chooser.addObject("Turn Left", autonomousTurnLeft());
-		chooser.addObject("Turn Right", autonomousTurnRight());
+		chooser.addObject("Left side", autonomousTurnLeft());
+		chooser.addObject("Right side", autonomousTurnRight());
+		chooser.addObject("Drive 300 cm", autonomousDriveDistance());
 		SmartDashboard.putData("Auto mode", chooser);
 
 		distanceEstimator.setup();
@@ -91,7 +92,7 @@ public class Robot extends IterativeRobot {
 	}
 
 	public void autonomousInit() {
-		autonomousCommand = getSelectedAutonomous();
+		autonomousCommand = autonomousGoForward();//getSelectedAutonomous();
 		autonomousCommand.start();
 	}
 
@@ -150,18 +151,30 @@ public class Robot extends IterativeRobot {
 	}
 
 	private Command autonomousTurnLeft() {
-		return autonomousTurn(-120);
+		return autonomousTurnLeft(-120);
 	}
 
 	private Command autonomousTurnRight() {
-		return autonomousTurn(120);
+		return autonomousTurnRight(120);
+	}
+	
+	private Command autonomousDriveDistance(){
+		return new DriveDistance(driveTrain, motionDetector, 300, 0.4);
 	}
 
-	private Command autonomousTurn(double angle) {
+	private Command autonomousTurnRight(double angle) {
 		CommandGroup cmd = new CommandGroup();
-		cmd.addSequential(new KeepDistance(driveTrain, distanceEstimator, motionDetector, 2.50/*264.7*/));
+		cmd.addSequential(new KeepDistance(driveTrain, distanceEstimator, motionDetector, 2.93/*264.7*/));
 		cmd.addSequential(new Turn(driveTrain, compass, motionDetector, angle));
-		//cmd.addSequential(new KeepDistance(driveTrain, distanceEstimator, motionDetector, 0.1));
+		cmd.addSequential(new KeepDistance(driveTrain, distanceEstimator, motionDetector, 0.59));
+		return cmd;
+	}
+	
+	private Command autonomousTurnLeft(double angle) {
+		CommandGroup cmd = new CommandGroup();
+		cmd.addSequential(new KeepDistance(driveTrain, distanceEstimator, motionDetector, 2.48/*264.7*/));
+		cmd.addSequential(new Turn(driveTrain, compass, motionDetector, angle));
+		cmd.addSequential(new KeepDistance(driveTrain, distanceEstimator, motionDetector, 1.385));
 		return cmd;
 	}
 

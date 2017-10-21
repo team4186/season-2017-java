@@ -34,7 +34,7 @@ public class DriveDistance extends Command{
 
     @Override
     protected boolean isFinished() {
-        return System.currentTimeMillis() > end && !motionDetector.isMoving();
+        return System.currentTimeMillis() > end;// && !motionDetector.isMoving();
     }
 
     @Override
@@ -50,5 +50,6 @@ public class DriveDistance extends Command{
 
     @Override
     protected void end() {
+    	driveTrain.stop();
     }
 }

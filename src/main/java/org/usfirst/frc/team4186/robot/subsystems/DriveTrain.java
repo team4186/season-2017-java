@@ -10,7 +10,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 public class DriveTrain extends Subsystem {
 
 	private final RobotDrive drive;
-	private double direction = -1.0;
+	private double direction = 1.0; //Default to false
 	private OI oi = new OI();
 
 	public DriveTrain(SpeedController left, SpeedController right) {
